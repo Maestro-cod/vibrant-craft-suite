@@ -33,11 +33,15 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "HyperPost AI — Generate Video, Music, Voice & Scripts" },
       { name: "description", content: "AI-powered creator studio for short-form video, music, voice-over and scripts. No social posting. Pure creation." },
-      { property: "og:title", content: "HyperPost AI" },
-      { property: "og:description", content: "AI video, music, voice-over and script generation." },
+      { property: "og:title", content: "HyperPost AI — Generate Video, Music, Voice & Scripts" },
+      { property: "og:description", content: "AI-powered creator studio for short-form video, music, voice-over and scripts. No social posting. Pure creation." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "HyperPost AI — Generate Video, Music, Voice & Scripts" },
+      { name: "twitter:description", content: "AI-powered creator studio for short-form video, music, voice-over and scripts. No social posting. Pure creation." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/197b446e-4e37-41dd-aef8-47570f179c45/id-preview-2f0c102a--a42bc29e-50ee-49bc-95cc-fa428033201e.lovable.app-1777792311727.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/197b446e-4e37-41dd-aef8-47570f179c45/id-preview-2f0c102a--a42bc29e-50ee-49bc-95cc-fa428033201e.lovable.app-1777792311727.png" },
     ],
     links: [
       {
