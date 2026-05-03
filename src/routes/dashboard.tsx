@@ -15,8 +15,13 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 type Gen = {
-  id: string; type: "video"|"music"|"voiceover"|"script";
-  prompt: string; output_url: string | null; output_text: string | null; created_at: string;
+  id: string;
+  type: "video"|"music"|"voiceover"|"script";
+  prompt: string;
+  output_url: string | null;
+  output_text: string | null;
+  created_at: string;
+  metadata?: { status?: string } | null;
 };
 
 const ICON = { video: Video, music: Music, voiceover: Mic, script: FileText };
@@ -149,6 +154,7 @@ function Dashboard() {
               {filtered.map((g) => {
                 const Icon = ICON[g.type];
                 const isAudio = (g.type === "music" || g.type === "voiceover") && g.output_url;
+                const isPendingVideo = g.type === "video" && !g.output_url && g.metadata?.status && g.metadata.status !== "FAILED";
                 return (
                   <GlassCard key={g.id} className="p-5 flex flex-col gap-3 lift">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -157,6 +163,8 @@ function Dashboard() {
                       <span className="ml-auto">{new Date(g.created_at).toLocaleDateString()}</span>
                     </div>
                     <p className="text-sm line-clamp-3">{g.prompt}</p>
+                    {isPendingVideo && <p className="text-xs text-muted-foreground">Video queued — still generating.</p>}
+                    {g.type === "video" && g.output_url && <video src={g.output_url} controls playsInline className="w-full rounded-lg bg-background" />}
                     {isAudio && <audio controls src={g.output_url!} className="w-full h-9" />}
                     <div className="flex gap-2 mt-auto pt-2">
                       <button onClick={() => download(g)} className="flex-1 py-2 rounded-lg bg-gradient-brand text-background text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90">
