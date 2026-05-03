@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { authed } from "@/integrations/supabase/authed-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ async function assertAdmin(userId: string) {
 }
 
 export const adminListUsers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
@@ -28,7 +28,7 @@ export const adminListUsers = createServerFn({ method: "POST" })
 
 const Adjust = z.object({ userId: z.string().uuid(), credits: z.number().int().min(0).max(1000000) });
 export const adminSetCredits = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => Adjust.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -39,7 +39,7 @@ export const adminSetCredits = createServerFn({ method: "POST" })
 
 const Plan = z.object({ userId: z.string().uuid(), plan: z.enum(["free", "basic", "pro", "elite"]) });
 export const adminSetPlan = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => Plan.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -48,7 +48,7 @@ export const adminSetPlan = createServerFn({ method: "POST" })
   });
 
 export const adminStats = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const [{ count: users }, { count: gens }, { data: plans }] = await Promise.all([

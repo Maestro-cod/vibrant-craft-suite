@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { authed } from "@/integrations/supabase/authed-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { spendCredits } from "./credits.server";
 
@@ -10,7 +10,7 @@ const VoiceInput = z.object({
 });
 
 export const generateVoice = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => VoiceInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -67,7 +67,7 @@ const MusicInput = z.object({
  * Great for ambient beds, FX scores, vibe loops up to 22s.
  */
 export const generateMusic = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => MusicInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
