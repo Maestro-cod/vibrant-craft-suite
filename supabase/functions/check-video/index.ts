@@ -311,10 +311,29 @@ Deno.serve(async (req) => {
       }
       if (!uploadOk) {
         console.error("[check-video] storage upload failed after retries", lastUploadErr);
-        return json(
-          { error: "UPLOAD_FAILED", message: "Video finished, but storing it failed. We'll retry on the next check." },
-          500,
-        );
+        // Fallback: save the provider URL directly so the user can still access the video.
+        const fallbackMetadata = {
+          ...baseMetadata,
+          status: "COMPLETED",
+          provider_url: providerUrl,
+          storage_path: null,
+          storage_upload_error:
+            lastUploadErr instanceof Error ? lastUploadErr.message : String(lastUploadErr),
+          completed_at: new Date().toISOString(),
+        };
+        const { error: fallbackUpdateErr } = await admin
+          .from("generations")
+          .update({ output_url: providerUrl, metadata: fallbackMetadata })
+          .eq("id", generation.id);
+        if (fallbackUpdateErr) {
+          console.error("[check-video] fallback update failed", fallbackUpdateErr);
+        }
+        return json({
+          generation_id: generation.id,
+          status: "COMPLETED",
+          url: providerUrl,
+          warning: "Stored provider URL directly (our storage upload failed).",
+        });
       }
 
       const { data: publicData } = admin.storage.from("generations").getPublicUrl(storagePath);
