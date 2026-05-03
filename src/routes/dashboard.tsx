@@ -158,7 +158,7 @@ function Dashboard() {
                 return (
                   <GlassCard key={g.id} className="p-5 flex flex-col gap-3 lift">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Icon className="size-4 text-[oklch(0.85_0.18_220)]" />
+                      <Icon className="size-4 text-primary" />
                       <span className="uppercase tracking-wider font-semibold">{LABEL[g.type]}</span>
                       <span className="ml-auto">{new Date(g.created_at).toLocaleDateString()}</span>
                     </div>
@@ -167,7 +167,7 @@ function Dashboard() {
                     {g.type === "video" && g.output_url && <video src={g.output_url} controls playsInline className="w-full rounded-lg bg-background" />}
                     {isAudio && <audio controls src={g.output_url!} className="w-full h-9" />}
                     <div className="flex gap-2 mt-auto pt-2">
-                      <button onClick={() => download(g)} className="flex-1 py-2 rounded-lg bg-gradient-brand text-background text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90">
+                      <button onClick={() => download(g)} className="flex-1 py-2 rounded-lg bg-gradient-brand text-primary-foreground text-sm font-medium flex items-center justify-center gap-1.5 hover:opacity-90">
                         <Download className="size-3.5" /> Download
                       </button>
                       <button onClick={() => remove(g.id)} className="p-2 rounded-lg glass-strong hover:bg-white/10" aria-label="Delete">
