@@ -43,7 +43,7 @@ export const generateVideo = createServerFn({ method: "POST" })
       body: JSON.stringify({
         prompt: data.prompt,
         num_frames: Math.min(32, Math.max(16, data.duration * 4)),
-        aspect_ratio: RATIO_MAP[data.ratio] ?? "9:16",
+        video_size: SIZE_MAP[data.ratio] ?? "portrait_16_9",
       }),
     });
     if (!submit.ok) {
