@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authed } from "@/integrations/supabase/authed-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { spendCredits } from "./credits.server";
 
 const VoiceInput = z.object({
   text: z.string().trim().min(1).max(2000),
@@ -13,6 +11,9 @@ export const generateVoice = createServerFn({ method: "POST" })
   .middleware([authed])
   .inputValidator((d) => VoiceInput.parse(d))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { spendCredits } = await import("@/server/credits.server");
+
     const { userId } = context;
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) throw new Error("Voice engine not configured");
@@ -27,7 +28,12 @@ export const generateVoice = createServerFn({ method: "POST" })
         body: JSON.stringify({
           text: data.text,
           model_id: "eleven_multilingual_v2",
-          voice_settings: { stability: 0.55, similarity_boost: 0.78, style: 0.35, use_speaker_boost: true },
+          voice_settings: {
+            stability: 0.55,
+            similarity_boost: 0.78,
+            style: 0.35,
+            use_speaker_boost: true,
+          },
         }),
       },
     );
@@ -70,6 +76,9 @@ export const generateMusic = createServerFn({ method: "POST" })
   .middleware([authed])
   .inputValidator((d) => MusicInput.parse(d))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { spendCredits } = await import("@/server/credits.server");
+
     const { userId } = context;
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) throw new Error("Audio engine not configured");

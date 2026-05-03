@@ -23,8 +23,12 @@ type AuthCtx = {
 };
 
 const Ctx = createContext<AuthCtx>({
-  user: null, session: null, profile: null, loading: true,
-  refreshProfile: async () => {}, signOut: async () => {},
+  user: null,
+  session: null,
+  profile: null,
+  loading: true,
+  refreshProfile: async () => {},
+  signOut: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -52,14 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{
-      user: session?.user ?? null,
-      session,
-      profile,
-      loading,
-      refreshProfile: async () => { if (session?.user) await loadProfile(session.user.id); },
-      signOut: async () => { await supabase.auth.signOut(); },
-    }}>
+    <Ctx.Provider
+      value={{
+        user: session?.user ?? null,
+        session,
+        profile,
+        loading,
+        refreshProfile: async () => {
+          if (session?.user) await loadProfile(session.user.id);
+        },
+        signOut: async () => {
+          await supabase.auth.signOut();
+        },
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

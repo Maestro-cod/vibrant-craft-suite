@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { authed } from "@/integrations/supabase/authed-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function stripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -22,7 +21,10 @@ function getPlanPriceId(plan: "basic" | "pro" | "elite") {
 }
 
 // Plan -> default monthly price (USD, in cents)
-const PLAN_PRICE: Record<"basic" | "pro" | "elite", { amount: number; credits: number; name: string }> = {
+const PLAN_PRICE: Record<
+  "basic" | "pro" | "elite",
+  { amount: number; credits: number; name: string }
+> = {
   basic: { amount: 1200, credits: 100, name: "HyperPost Basic" },
   pro: { amount: 3500, credits: 400, name: "HyperPost Pro" },
   elite: { amount: 5900, credits: 1000, name: "HyperPost Elite" },
@@ -34,6 +36,7 @@ export const createCheckout = createServerFn({ method: "POST" })
   .middleware([authed])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { userId, claims } = context;
     const s = stripe();
     const cfg = PLAN_PRICE[data.plan];
@@ -54,7 +57,10 @@ export const createCheckout = createServerFn({ method: "POST" })
         metadata: { user_id: userId },
       });
       customerId = customer.id;
-      await supabaseAdmin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", userId);
+      await supabaseAdmin
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", userId);
     }
 
     const session = await s.checkout.sessions.create({
@@ -89,6 +95,7 @@ export const createCheckout = createServerFn({ method: "POST" })
 export const openBillingPortal = createServerFn({ method: "POST" })
   .middleware([authed])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { userId, claims } = context;
     const s = stripe();
     const origin = process.env.PUBLIC_SITE_URL || claims.iss?.split("/auth/v1")[0] || "";

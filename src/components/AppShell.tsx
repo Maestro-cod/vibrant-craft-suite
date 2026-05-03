@@ -1,5 +1,16 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, LayoutDashboard, Video, Music, Mic, FileText, CreditCard, LogOut, Sparkles, Shield } from "lucide-react";
+import {
+  Home,
+  LayoutDashboard,
+  Video,
+  Music,
+  Mic,
+  FileText,
+  CreditCard,
+  LogOut,
+  Sparkles,
+  Shield,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { AnimatedBg } from "./AnimatedBg";
 import { CreditMeter } from "./CreditMeter";
@@ -17,7 +28,13 @@ const NAV = [
 
 const MOBILE_NAV = NAV.slice(0, 5);
 
-export function AppShell({ children, hideFooter = false }: { children: ReactNode; hideFooter?: boolean }) {
+export function AppShell({
+  children,
+  hideFooter = false,
+}: {
+  children: ReactNode;
+  hideFooter?: boolean;
+}) {
   const { user, profile, signOut } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
@@ -40,15 +57,23 @@ export function AppShell({ children, hideFooter = false }: { children: ReactNode
               {NAV.map(({ to, label, icon: Icon }) => {
                 const active = loc.pathname === to;
                 return (
-                  <Link key={to} to={to}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}>
-                    <Icon className="size-4" />{label}
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                  >
+                    <Icon className="size-4" />
+                    {label}
                   </Link>
                 );
               })}
               {isAdmin && (
-                <Link to="/admin" className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${loc.pathname === "/admin" ? "bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}>
-                  <Shield className="size-4" />Admin
+                <Link
+                  to="/admin"
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${loc.pathname === "/admin" ? "bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
+                >
+                  <Shield className="size-4" />
+                  Admin
                 </Link>
               )}
             </nav>
@@ -57,13 +82,22 @@ export function AppShell({ children, hideFooter = false }: { children: ReactNode
               {user ? (
                 <>
                   <CreditMeter />
-                  <button onClick={async () => { await signOut(); nav({ to: "/" }); }}
-                    className="p-2 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground" aria-label="Sign out">
+                  <button
+                    onClick={async () => {
+                      await signOut();
+                      nav({ to: "/" });
+                    }}
+                    className="p-2 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground"
+                    aria-label="Sign out"
+                  >
                     <LogOut className="size-4" />
                   </button>
                 </>
               ) : (
-                <Link to="/auth" className="px-4 py-1.5 rounded-lg bg-gradient-brand text-background font-semibold text-sm glow-cyan hover:opacity-90 transition">
+                <Link
+                  to="/auth"
+                  className="px-4 py-1.5 rounded-lg bg-gradient-brand text-background font-semibold text-sm glow-cyan hover:opacity-90 transition"
+                >
                   Sign in
                 </Link>
               )}
@@ -83,7 +117,11 @@ export function AppShell({ children, hideFooter = false }: { children: ReactNode
             {MOBILE_NAV.map(({ to, label, icon: Icon }) => {
               const active = loc.pathname === to;
               return (
-                <Link key={to} to={to} className={`flex flex-col items-center gap-0.5 py-2 rounded-lg text-[10px] transition ${active ? "text-foreground" : "text-muted-foreground"}`}>
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex flex-col items-center gap-0.5 py-2 rounded-lg text-[10px] transition ${active ? "text-foreground" : "text-muted-foreground"}`}
+                >
                   <Icon className={`size-5 ${active ? "text-[oklch(0.85_0.18_220)]" : ""}`} />
                   {label}
                 </Link>

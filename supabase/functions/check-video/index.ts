@@ -69,7 +69,10 @@ Deno.serve(async (req) => {
 
     const statusPayload = await statusResponse.json();
     const status = normalizeStatus(statusPayload?.status ?? statusPayload?.state);
-    const baseMetadata = typeof generation.metadata === "object" && generation.metadata ? generation.metadata as Record<string, unknown> : {};
+    const baseMetadata =
+      typeof generation.metadata === "object" && generation.metadata
+        ? (generation.metadata as Record<string, unknown>)
+        : {};
 
     if (status === "COMPLETED") {
       const response = await fetch(responseUrl, {
@@ -86,13 +89,22 @@ Deno.serve(async (req) => {
       const providerUrl = extractVideoUrl(resultPayload);
       if (!providerUrl) {
         console.error("[check-video] provider url missing", resultPayload);
-        return json({ error: "MISSING_VIDEO_URL", message: "Video provider completed, but no video URL was returned." }, 502);
+        return json(
+          {
+            error: "MISSING_VIDEO_URL",
+            message: "Video provider completed, but no video URL was returned.",
+          },
+          502,
+        );
       }
 
       const videoResponse = await fetch(providerUrl);
       if (!videoResponse.ok) {
         console.error("[check-video] provider asset download failed", videoResponse.status);
-        return json({ error: "DOWNLOAD_FAILED", message: "Could not download the generated video." }, 502);
+        return json(
+          { error: "DOWNLOAD_FAILED", message: "Could not download the generated video." },
+          502,
+        );
       }
 
       const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
@@ -106,7 +118,10 @@ Deno.serve(async (req) => {
 
       if (uploadError) {
         console.error("[check-video] storage upload failed", uploadError);
-        return json({ error: "UPLOAD_FAILED", message: "Video finished, but storing it failed." }, 500);
+        return json(
+          { error: "UPLOAD_FAILED", message: "Video finished, but storing it failed." },
+          500,
+        );
       }
 
       const { data: publicData } = admin.storage.from("generations").getPublicUrl(storagePath);
@@ -128,7 +143,10 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         console.error("[check-video] generation update failed", updateError);
-        return json({ error: "SAVE_FAILED", message: "Video finished, but history update failed." }, 500);
+        return json(
+          { error: "SAVE_FAILED", message: "Video finished, but history update failed." },
+          500,
+        );
       }
 
       return json({
@@ -169,6 +187,12 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[check-video] unexpected error", error);
-    return json({ error: "INTERNAL_ERROR", message: error instanceof Error ? error.message : "Unexpected error." }, 500);
+    return json(
+      {
+        error: "INTERNAL_ERROR",
+        message: error instanceof Error ? error.message : "Unexpected error.",
+      },
+      500,
+    );
   }
 });

@@ -23,8 +23,9 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
         let event: Stripe.Event;
         try {
           event = await stripe.webhooks.constructEventAsync(raw, sig ?? "", wh);
-        } catch (e: any) {
-          return new Response(`Bad signature: ${e.message}`, { status: 400 });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Invalid signature";
+          return new Response(`Bad signature: ${msg}`, { status: 400 });
         }
 
         const planFromMeta = (m: Record<string, string> | null | undefined) =>
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
                   stripe_subscription_id: sub.id,
                   plan: plan ?? "basic",
                   status: sub.status,
-                  current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+                  current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
                 },
                 { onConflict: "user_id" },
               );
@@ -77,7 +78,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
             }
           } else if (event.type === "invoice.paid") {
             const inv = event.data.object as Stripe.Invoice;
-            const subId = (inv as any).subscription as string | undefined;
+            const subId = typeof inv.subscription === "string" ? inv.subscription : undefined;
             if (subId) {
               const sub = await stripe.subscriptions.retrieve(subId);
               const userId = sub.metadata?.user_id;
@@ -86,11 +87,11 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
                 await supabaseAdmin.rpc("grant_plan_credits", { _user_id: userId, _plan: plan });
               }
             }
-          
           }
-        } catch (e: any) {
+        } catch (e) {
           console.error("Stripe webhook handler error:", e);
-          return new Response(`Handler error: ${e.message}`, { status: 500 });
+          const msg = e instanceof Error ? e.message : "Unknown error";
+          return new Response(`Handler error: ${msg}`, { status: 500 });
         }
 
         return new Response("ok");

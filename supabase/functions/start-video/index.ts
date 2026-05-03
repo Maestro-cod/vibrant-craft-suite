@@ -25,7 +25,10 @@ Deno.serve(async (req) => {
     const duration = parseDuration(body?.duration);
 
     if (prompt.length < 3 || prompt.length > 2000) {
-      return json({ error: "INVALID_PROMPT", message: "Prompt must be between 3 and 2000 characters." }, 400);
+      return json(
+        { error: "INVALID_PROMPT", message: "Prompt must be between 3 and 2000 characters." },
+        400,
+      );
     }
 
     const { user, error: authError } = await getUserFromRequest(req);
@@ -82,7 +85,13 @@ Deno.serve(async (req) => {
     const requestId = submitPayload?.request_id ?? submitPayload?.requestId;
     if (!requestId || typeof requestId !== "string") {
       console.error("[start-video] missing request id", submitPayload);
-      return json({ error: "INVALID_PROVIDER_RESPONSE", message: "Video provider did not return a request ID." }, 502);
+      return json(
+        {
+          error: "INVALID_PROVIDER_RESPONSE",
+          message: "Video provider did not return a request ID.",
+        },
+        502,
+      );
     }
 
     if (!isAdminEmail && !profile.unlimited) {
@@ -97,7 +106,13 @@ Deno.serve(async (req) => {
 
       if (creditError || !updatedProfile) {
         console.error("[start-video] credit update failed", creditError);
-        return json({ error: "CREDIT_UPDATE_FAILED", message: "Your credit balance changed. Please refresh and try again." }, 409);
+        return json(
+          {
+            error: "CREDIT_UPDATE_FAILED",
+            message: "Your credit balance changed. Please refresh and try again.",
+          },
+          409,
+        );
       }
     }
 
@@ -123,7 +138,13 @@ Deno.serve(async (req) => {
 
     if (insertError || !generation) {
       console.error("[start-video] generation insert failed", insertError);
-      return json({ error: "GENERATION_SAVE_FAILED", message: "Video was queued, but we could not save it to history." }, 500);
+      return json(
+        {
+          error: "GENERATION_SAVE_FAILED",
+          message: "Video was queued, but we could not save it to history.",
+        },
+        500,
+      );
     }
 
     return json({
@@ -135,6 +156,12 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[start-video] unexpected error", error);
-    return json({ error: "INTERNAL_ERROR", message: error instanceof Error ? error.message : "Unexpected error." }, 500);
+    return json(
+      {
+        error: "INTERNAL_ERROR",
+        message: error instanceof Error ? error.message : "Unexpected error.",
+      },
+      500,
+    );
   }
 });

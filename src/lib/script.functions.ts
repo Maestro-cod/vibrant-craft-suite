@@ -15,7 +15,11 @@ export const generateScript = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are a viral short-form video script writer. Write a complete, punchy 60-90 second video script with a HOOK, BODY (3 beats), and CTA. Use clear section headers. Keep it visual and conversational." },
+          {
+            role: "system",
+            content:
+              "You are a viral short-form video script writer. Write a complete, punchy 60-90 second video script with a HOOK, BODY (3 beats), and CTA. Use clear section headers. Keep it visual and conversational.",
+          },
           { role: "user", content: `Topic: ${data.topic}` },
         ],
       }),

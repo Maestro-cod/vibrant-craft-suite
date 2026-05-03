@@ -26,7 +26,12 @@ const RATIOS = [
 
 const DURATIONS = [
   { value: 5 as const, label: "5 seconds", credits: 1, helper: "Best for quick social clips" },
-  { value: 10 as const, label: "10 seconds", credits: 2, helper: "Longer shot, higher credit cost" },
+  {
+    value: 10 as const,
+    label: "10 seconds",
+    credits: 2,
+    helper: "Longer shot, higher credit cost",
+  },
 ];
 
 type VideoDuration = (typeof DURATIONS)[number]["value"];
@@ -92,7 +97,10 @@ function VideoPage() {
     }
   };
 
-  const callVideoFunction = async (fn: "start-video" | "check-video", body: Record<string, unknown>) => {
+  const callVideoFunction = async (
+    fn: "start-video" | "check-video",
+    body: Record<string, unknown>,
+  ) => {
     const token = session?.access_token;
     if (!token) {
       throw new Error("Please sign in again and retry.");
@@ -157,10 +165,10 @@ function VideoPage() {
         url: prev?.url,
       }));
       return status;
-    } catch (e: any) {
+    } catch (e) {
       stopPolling();
       setBusy(false);
-      toast.error(e?.message ?? "Could not check video status");
+      toast.error(e instanceof Error ? e.message : "Could not check video status");
       return "FAILED";
     }
   };
@@ -168,7 +176,9 @@ function VideoPage() {
   const generate = async () => {
     if (!prompt.trim() || !user) return;
     if (!isAdminEmail && !profile?.unlimited && (profile?.credits ?? 0) < creditsRequired) {
-      toast.error(`You need ${creditsRequired} credit${creditsRequired === 1 ? "" : "s"} for this video.`);
+      toast.error(
+        `You need ${creditsRequired} credit${creditsRequired === 1 ? "" : "s"} for this video.`,
+      );
       return;
     }
 
@@ -202,9 +212,9 @@ function VideoPage() {
           void pollUntilComplete(requestId);
         }, 10000);
       }
-    } catch (e: any) {
+    } catch (e) {
       setBusy(false);
-      toast.error(e?.message ?? "Generation failed");
+      toast.error(e instanceof Error ? e.message : "Generation failed");
     }
   };
 
@@ -212,10 +222,14 @@ function VideoPage() {
     <AppShell>
       <div className="mx-auto max-w-4xl px-4 pt-8 sm:px-6 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-xl bg-gradient-brand glow-cyan"><Video className="size-5 text-primary-foreground" /></div>
+          <div className="grid size-12 place-items-center rounded-xl bg-gradient-brand glow-cyan">
+            <Video className="size-5 text-primary-foreground" />
+          </div>
           <div>
             <h1 className="text-3xl font-bold">Video Creator</h1>
-            <p className="text-sm text-muted-foreground">Queue a real Kling video, then we auto-check every 10 seconds until it is ready.</p>
+            <p className="text-sm text-muted-foreground">
+              Queue a real Kling video, then we auto-check every 10 seconds until it is ready.
+            </p>
           </div>
         </div>
 
@@ -287,7 +301,9 @@ function VideoPage() {
             </div>
             <div className="flex items-center gap-2 font-medium">
               <Coins className="size-4 text-primary" />
-              <span>{duration}s video = {creditsRequired} credit{creditsRequired === 1 ? "" : "s"}</span>
+              <span>
+                {duration}s video = {creditsRequired} credit{creditsRequired === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
 
@@ -302,7 +318,8 @@ function VideoPage() {
               </>
             ) : (
               <>
-                <Sparkles className="size-4" /> Generate video ({creditsRequired} credit{creditsRequired === 1 ? "" : "s"})
+                <Sparkles className="size-4" /> Generate video ({creditsRequired} credit
+                {creditsRequired === 1 ? "" : "s"})
               </>
             )}
           </button>
@@ -314,7 +331,9 @@ function VideoPage() {
               <Loader2 className="size-5 animate-spin text-primary" />
               <div>
                 <p className="font-medium">Generating your video... this takes 1-2 minutes</p>
-                <p className="text-sm text-muted-foreground">We auto-check every 10 seconds and show it here when ready.</p>
+                <p className="text-sm text-muted-foreground">
+                  We auto-check every 10 seconds and show it here when ready.
+                </p>
               </div>
             </div>
           </GlassCard>
@@ -324,7 +343,9 @@ function VideoPage() {
           <GlassCard>
             <h3 className="mb-2 font-semibold">Latest request</h3>
             <p className="mb-1 text-sm text-muted-foreground">{last.prompt}</p>
-            <p className="text-sm text-destructive">This video did not finish successfully. Please try again.</p>
+            <p className="text-sm text-destructive">
+              This video did not finish successfully. Please try again.
+            </p>
           </GlassCard>
         )}
 
@@ -333,7 +354,12 @@ function VideoPage() {
             <h3 className="mb-2 font-semibold">Latest</h3>
             <p className="mb-1 text-sm text-muted-foreground">{last.prompt}</p>
             <p className="mb-4 text-xs text-muted-foreground">Request ID: {last.requestId}</p>
-            <video src={last.url} controls playsInline className="mb-4 w-full rounded-xl bg-background" />
+            <video
+              src={last.url}
+              controls
+              playsInline
+              className="mb-4 w-full rounded-xl bg-background"
+            />
             <button
               onClick={download}
               className="inline-flex items-center gap-2 rounded-lg bg-gradient-brand px-4 py-2 font-medium text-primary-foreground"

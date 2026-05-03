@@ -48,7 +48,10 @@ export function createAdminClient() {
 export async function getUserFromRequest(req: Request) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
-    return { user: null, error: json({ error: "UNAUTHORIZED", message: "Missing authorization header." }, 401) };
+    return {
+      user: null,
+      error: json({ error: "UNAUTHORIZED", message: "Missing authorization header." }, 401),
+    };
   }
 
   const client = createClient(requiredEnv("SUPABASE_URL"), getPublishableKey(), {
@@ -63,7 +66,10 @@ export async function getUserFromRequest(req: Request) {
 
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) {
-    return { user: null, error: json({ error: "UNAUTHORIZED", message: "Invalid or expired session." }, 401) };
+    return {
+      user: null,
+      error: json({ error: "UNAUTHORIZED", message: "Invalid or expired session." }, 401),
+    };
   }
 
   return { user: data.user, error: null };
@@ -112,11 +118,24 @@ export function getRequestUrls(requestId: string, model: string = VIDEO_MODEL) {
   };
 }
 
-export function extractVideoUrl(payload: any): string | undefined {
-  return payload?.video?.url
-    ?? payload?.data?.video?.url
-    ?? payload?.videos?.[0]?.url
-    ?? payload?.data?.videos?.[0]?.url
-    ?? payload?.output?.url
-    ?? payload?.data?.output?.url;
+interface VideoPayload {
+  video?: { url?: string };
+  data?: {
+    video?: { url?: string };
+    videos?: Array<{ url?: string }>;
+    output?: { url?: string };
+  };
+  videos?: Array<{ url?: string }>;
+  output?: { url?: string };
+}
+
+export function extractVideoUrl(payload: VideoPayload): string | undefined {
+  return (
+    payload?.video?.url ??
+    payload?.data?.video?.url ??
+    payload?.videos?.[0]?.url ??
+    payload?.data?.videos?.[0]?.url ??
+    payload?.output?.url ??
+    payload?.data?.output?.url
+  );
 }
