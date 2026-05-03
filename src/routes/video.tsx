@@ -93,6 +93,7 @@ function VideoPage() {
   const [last, setLast] = useState<LatestVideo | null>(null);
   const pollingRef = useRef<number | null>(null);
   const pollStartRef = useRef<number>(0);
+  const pollAttemptsRef = useRef<number>(0);
   const inFlightRef = useRef<boolean>(false);
   const consecutiveErrorsRef = useRef<number>(0);
 
