@@ -32,7 +32,7 @@ export function getPublishableKey() {
   return (
     Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
     Deno.env.get("SUPABASE_ANON_KEY") ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bWRlcnZqYWdnbWx2YmJxYWloIiwicm9sZSI6ImFub24iLCJleU4iOjE3Nzc3NjE5ODQsImV4cCI6MjA5MzMzNzk4NH0.0hKtDzwu9RusmJNCaNqfUEXxcImTquQC7Ul3v8rua3I"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bWRlcnZqYWdnbWx2YmJxYWloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NjE5ODQsImV4cCI6MjA5MzMzNzk4NH0.0hKtDzwu9RusmJNCaNqfUEXxcImTquQC7Ul3v8rua3I"
   );
 }
 
