@@ -7,6 +7,7 @@ import {
   parseAspectRatio,
   parseDuration,
   requiredEnv,
+  VIDEO_MODEL,
 } from "../_shared/video.ts";
 
 Deno.serve(async (req) => {
