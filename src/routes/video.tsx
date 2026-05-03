@@ -49,6 +49,7 @@ function VideoPage() {
   const [last, setLast] = useState<LatestVideo | null>(null);
   const pollingRef = useRef<number | null>(null);
   const creditsRequired = duration === 10 ? 2 : 1;
+  const isAdminEmail = user?.email?.toLowerCase() === "stefanmaestro25@gmail.com";
 
   useEffect(() => {
     return () => {
@@ -166,7 +167,7 @@ function VideoPage() {
 
   const generate = async () => {
     if (!prompt.trim() || !user) return;
-    if (!profile?.unlimited && (profile?.credits ?? 0) < creditsRequired) {
+    if (!isAdminEmail && !profile?.unlimited && (profile?.credits ?? 0) < creditsRequired) {
       toast.error(`You need ${creditsRequired} credit${creditsRequired === 1 ? "" : "s"} for this video.`);
       return;
     }
