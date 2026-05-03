@@ -143,8 +143,12 @@ function VideoPage() {
       inFlightRef.current = true;
 
       try {
-        // Hard timeout safety net (server also enforces, but guard the UI).
-        if (pollStartRef.current && Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS) {
+        pollAttemptsRef.current += 1;
+        // Hard timeout safety net: 72 attempts (12 min) or wall-clock fallback.
+        const timedOut =
+          pollAttemptsRef.current > MAX_POLL_ATTEMPTS ||
+          (pollStartRef.current && Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS);
+        if (timedOut) {
           stopPolling();
           setBusy(false);
           saveStoredRequest(null);
@@ -152,9 +156,9 @@ function VideoPage() {
             prompt: promptText,
             requestId,
             status: "FAILED",
-            errorMessage: "Video timed out. If credits were charged, they were refunded.",
+            errorMessage: "Video is taking too long. Please check back later or try again.",
           });
-          toast.error("Video timed out — please try again.");
+          toast.error("Video is taking too long. Please check back later or try again.");
           return "FAILED";
         }
 
