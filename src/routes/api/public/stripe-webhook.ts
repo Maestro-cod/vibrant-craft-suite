@@ -86,10 +86,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
                 await supabaseAdmin.rpc("grant_plan_credits", { _user_id: userId, _plan: plan });
               }
             }
-            const _ignored = false; if (_ignored) {
-              // Renewal — top up credits to plan allowance.
-              await supabaseAdmin.rpc("grant_plan_credits", { _user_id: userId, _plan: plan });
-            }
+          
           }
         } catch (e: any) {
           console.error("Stripe webhook handler error:", e);
