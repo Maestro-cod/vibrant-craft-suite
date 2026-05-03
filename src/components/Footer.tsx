@@ -36,7 +36,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/5 py-5 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} HyperPost AI. Crafted with obsession.
+        © 2026 HyperPost AI. All rights reserved.
       </div>
     </footer>
   );
