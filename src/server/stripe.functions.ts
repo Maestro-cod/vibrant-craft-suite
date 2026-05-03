@@ -10,6 +10,17 @@ function stripe() {
   return new Stripe(key);
 }
 
+function getPlanPriceId(plan: "basic" | "pro" | "elite") {
+  const envKey = {
+    basic: "STRIPE_PRICE_ID_BASIC",
+    pro: "STRIPE_PRICE_ID_PRO",
+    elite: "STRIPE_PRICE_ID_ELITE",
+  }[plan];
+
+  const priceId = process.env[envKey];
+  return priceId?.trim() || null;
+}
+
 // Plan -> default monthly price (USD, in cents)
 const PLAN_PRICE: Record<"basic" | "pro" | "elite", { amount: number; credits: number; name: string }> = {
   basic: { amount: 1200, credits: 100, name: "HyperPost Basic" },
@@ -26,6 +37,7 @@ export const createCheckout = createServerFn({ method: "POST" })
     const { userId, claims } = context;
     const s = stripe();
     const cfg = PLAN_PRICE[data.plan];
+    const priceId = getPlanPriceId(data.plan);
     const origin = process.env.PUBLIC_SITE_URL || claims.iss?.split("/auth/v1")[0] || "";
 
     // Reuse customer if it exists
@@ -51,20 +63,22 @@ export const createCheckout = createServerFn({ method: "POST" })
       success_url: `${origin}/dashboard?checkout=success`,
       cancel_url: `${origin}/pricing?checkout=cancel`,
       allow_promotion_codes: true,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            recurring: { interval: "month" },
-            unit_amount: cfg.amount,
-            product_data: {
-              name: cfg.name,
-              description: `${cfg.credits} credits per month`,
+      line_items: priceId
+        ? [{ quantity: 1, price: priceId }]
+        : [
+            {
+              quantity: 1,
+              price_data: {
+                currency: "usd",
+                recurring: { interval: "month" },
+                unit_amount: cfg.amount,
+                product_data: {
+                  name: cfg.name,
+                  description: `${cfg.credits} credits per month`,
+                },
+              },
             },
-          },
-        },
-      ],
+          ],
       metadata: { user_id: userId, plan: data.plan },
       subscription_data: { metadata: { user_id: userId, plan: data.plan } },
     });

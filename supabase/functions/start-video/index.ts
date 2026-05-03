@@ -31,6 +31,8 @@ Deno.serve(async (req) => {
     const { user, error: authError } = await getUserFromRequest(req);
     if (authError || !user) return authError!;
 
+    const isAdminEmail = user.email?.toLowerCase() === "stefanmaestro25@gmail.com";
+
     const admin = createAdminClient();
     const { data: profile, error: profileError } = await admin
       .from("profiles")
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
     }
 
     const creditsRequired = getVideoCost(duration);
-    if (!profile.unlimited && profile.credits < creditsRequired) {
+    if (!isAdminEmail && !profile.unlimited && profile.credits < creditsRequired) {
       return json(
         {
           error: "INSUFFICIENT_CREDITS",
@@ -82,7 +84,7 @@ Deno.serve(async (req) => {
       return json({ error: "INVALID_PROVIDER_RESPONSE", message: "Video provider did not return a request ID." }, 502);
     }
 
-    if (!profile.unlimited) {
+    if (!isAdminEmail && !profile.unlimited) {
       const nextCredits = profile.credits - creditsRequired;
       const { data: updatedProfile, error: creditError } = await admin
         .from("profiles")
