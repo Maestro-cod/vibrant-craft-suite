@@ -106,6 +106,7 @@ function VideoPage() {
       pollingRef.current = null;
     }
     pollStartRef.current = 0;
+    pollAttemptsRef.current = 0;
     consecutiveErrorsRef.current = 0;
   }, []);
 
