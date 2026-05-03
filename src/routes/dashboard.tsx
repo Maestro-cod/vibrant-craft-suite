@@ -74,12 +74,27 @@ function Dashboard() {
     toast.success("Deleted");
   };
 
-  const download = (g: Gen) => {
+  const download = async (g: Gen) => {
     if (g.output_url) {
-      const a = document.createElement("a");
-      a.href = g.output_url; a.target = "_blank";
-      a.download = `${g.type}-${g.id.slice(0,6)}`;
-      a.click();
+      const ext = g.type === "video" ? "mp4" : "mp3";
+      const filename = `${g.type}-${g.id.slice(0,6)}.${ext}`;
+      try {
+        const res = await fetch(g.output_url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) {
+        console.error("[download] failed", e);
+        toast.error("Download failed — opening in new tab");
+        window.open(g.output_url, "_blank");
+      }
     } else if (g.output_text) {
       const blob = new Blob([g.output_text], { type: "text/plain" });
       const a = document.createElement("a");
