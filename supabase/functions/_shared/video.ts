@@ -100,7 +100,12 @@ export function normalizeStatus(status: unknown) {
 export const VIDEO_MODEL = "fal-ai/kling-video/v1.6/standard/text-to-video";
 
 export function getRequestUrls(requestId: string, model: string = VIDEO_MODEL) {
-  const base = `https://queue.fal.run/${model}/requests/${requestId}`;
+  // Fal's queue status/response endpoints only use the app namespace
+  // (e.g. "fal-ai/kling-video"), not the full model path with version/variant.
+  // Using the full path returns 405 Method Not Allowed.
+  const parts = model.split("/");
+  const appNamespace = parts.slice(0, 2).join("/");
+  const base = `https://queue.fal.run/${appNamespace}/requests/${requestId}`;
   return {
     statusUrl: `${base}/status`,
     responseUrl: base,
