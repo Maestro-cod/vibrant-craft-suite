@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_admin_unlimited() FROM PUBLIC, anon, authenticated;
