@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { authed } from "@/integrations/supabase/authed-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { spendCredits } from "./credits.server";
 
@@ -16,7 +16,7 @@ const VideoInput = z.object({
  * Storage bucket, and records the generation in the DB.
  */
 export const generateVideo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => VideoInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;

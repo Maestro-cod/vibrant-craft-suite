@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { authed } from "@/integrations/supabase/authed-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function stripe() {
@@ -20,7 +20,7 @@ const PLAN_PRICE: Record<"basic" | "pro" | "elite", { amount: number; credits: n
 const Input = z.object({ plan: z.enum(["basic", "pro", "elite"]) });
 
 export const createCheckout = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .inputValidator((d) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { userId, claims } = context;
@@ -73,7 +73,7 @@ export const createCheckout = createServerFn({ method: "POST" })
   });
 
 export const openBillingPortal = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([authed])
   .handler(async ({ context }) => {
     const { userId, claims } = context;
     const s = stripe();
