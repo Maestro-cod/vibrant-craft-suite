@@ -61,7 +61,7 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
                   stripe_subscription_id: sub.id,
                   plan: plan ?? "basic",
                   status: sub.status,
-                  current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+                  current_period_end: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
                 },
                 { onConflict: "user_id" },
               );
