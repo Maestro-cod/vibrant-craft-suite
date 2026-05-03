@@ -9,6 +9,7 @@ type Profile = {
   avatar_url: string | null;
   plan: "free" | "basic" | "pro" | "elite";
   credits: number;
+  monthly_credits: number;
   unlimited: boolean;
 };
 
