@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
         prompt,
         duration: String(duration),
         aspect_ratio: aspectRatio,
+        generate_audio: true,
       }),
     });
 
