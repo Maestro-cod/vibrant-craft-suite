@@ -5,36 +5,31 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { spendCredits } from "./credits.server";
 
 const VideoInput = z.object({
-  prompt: z.string().trim().min(3).max(800),
+  prompt: z.string().trim().min(3).max(2000),
   ratio: z.enum(["9:16", "1:1", "16:9"]).default("9:16"),
-  duration: z.number().int().min(3).max(15).default(5),
+  duration: z.number().int().min(5).max(10).default(5),
 });
 
-// Map UI ratio to fal video_size enum
-const SIZE_MAP: Record<string, string> = {
-  "9:16": "portrait_16_9",
-  "1:1": "square",
-  "16:9": "landscape_16_9",
-};
-
 /**
- * Generate a real video via fal.ai (fast-animatediff text-to-video).
- * Synchronous call — fal returns the hosted MP4 URL when finished.
- * We re-host the MP4 into Supabase Storage so the Download button serves
- * a permanent file from our own bucket.
+ * Generate a real video via fal.ai Kling text-to-video.
+ * Polls the fal queue until completion, re-hosts the MP4 in our Supabase
+ * Storage bucket, and records the generation in the DB.
  */
 export const generateVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => VideoInput.parse(d))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const apiKey = process.env.FAL_API_KEY;
-    if (!apiKey) throw new Error("Video engine not configured (missing FAL_API_KEY)");
+    const apiKey = process.env.FAL_KEY ?? process.env.FAL_API_KEY;
+    if (!apiKey) throw new Error("Video engine not configured (missing FAL_KEY)");
 
     await spendCredits(userId, 1);
 
-    // Submit to fal queue
-    const submit = await fetch("https://queue.fal.run/fal-ai/fast-animatediff/text-to-video", {
+    const MODEL = "fal-ai/kling-video/v1/standard/text-to-video";
+    // Kling supports only 5 or 10 second durations
+    const dur = data.duration <= 7 ? "5" : "10";
+
+    const submit = await fetch(`https://queue.fal.run/${MODEL}`, {
       method: "POST",
       headers: {
         Authorization: `Key ${apiKey}`,
@@ -42,28 +37,38 @@ export const generateVideo = createServerFn({ method: "POST" })
       },
       body: JSON.stringify({
         prompt: data.prompt,
-        num_frames: Math.min(32, Math.max(16, data.duration * 4)),
-        video_size: SIZE_MAP[data.ratio] ?? "portrait_16_9",
+        duration: dur,
+        aspect_ratio: data.ratio,
       }),
     });
     if (!submit.ok) {
-      throw new Error(`Video submit failed [${submit.status}]: ${await submit.text()}`);
+      const txt = await submit.text();
+      console.error("[fal submit failed]", submit.status, txt);
+      throw new Error(`Video submit failed [${submit.status}]: ${txt.slice(0, 300)}`);
     }
-    const queued = (await submit.json()) as { request_id: string; status_url?: string; response_url?: string };
+    const queued = (await submit.json()) as {
+      request_id: string;
+      status_url?: string;
+      response_url?: string;
+    };
     const requestId = queued.request_id;
-    const statusUrl = queued.status_url ?? `https://queue.fal.run/fal-ai/fast-animatediff/requests/${requestId}/status`;
-    const responseUrl = queued.response_url ?? `https://queue.fal.run/fal-ai/fast-animatediff/requests/${requestId}`;
+    const statusUrl =
+      queued.status_url ?? `https://queue.fal.run/${MODEL}/requests/${requestId}/status`;
+    const responseUrl =
+      queued.response_url ?? `https://queue.fal.run/${MODEL}/requests/${requestId}`;
 
-    // Poll up to ~90s
+    // Poll up to ~5 minutes (Kling can take a couple of minutes)
     let videoUrl: string | undefined;
-    const deadline = Date.now() + 90_000;
+    const deadline = Date.now() + 300_000;
     while (Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((r) => setTimeout(r, 3000));
       const s = await fetch(statusUrl, { headers: { Authorization: `Key ${apiKey}` } });
       if (!s.ok) continue;
       const sj = (await s.json()) as { status?: string };
       if (sj.status === "COMPLETED") {
-        const r2 = await fetch(responseUrl, { headers: { Authorization: `Key ${apiKey}` } });
+        const r2 = await fetch(responseUrl, {
+          headers: { Authorization: `Key ${apiKey}` },
+        });
         const rj = (await r2.json()) as { video?: { url?: string } };
         videoUrl = rj?.video?.url;
         break;
@@ -74,7 +79,7 @@ export const generateVideo = createServerFn({ method: "POST" })
     }
     if (!videoUrl) throw new Error("Video generation timed out — try again");
 
-    // Download MP4 and re-host in our bucket
+    // Re-host the MP4 in our bucket
     const mp4Res = await fetch(videoUrl);
     if (!mp4Res.ok) throw new Error("Could not fetch generated video");
     const bytes = new Uint8Array(await mp4Res.arrayBuffer());
@@ -93,7 +98,11 @@ export const generateVideo = createServerFn({ method: "POST" })
         type: "video",
         prompt: data.prompt,
         output_url: pub.publicUrl,
-        metadata: { ratio: data.ratio, duration: data.duration, provider: "fal/fast-animatediff" },
+        metadata: {
+          ratio: data.ratio,
+          duration: Number(dur),
+          provider: "fal/kling-video-v1-standard",
+        },
       })
       .select()
       .single();
