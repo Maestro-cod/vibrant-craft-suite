@@ -78,7 +78,8 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
             }
           } else if (event.type === "invoice.paid") {
             const inv = event.data.object as Stripe.Invoice;
-            const subId = typeof inv.subscription === "string" ? inv.subscription : undefined;
+            const invSub = (inv as unknown as { subscription?: string | { id: string } }).subscription;
+            const subId = typeof invSub === "string" ? invSub : invSub?.id;
             if (subId) {
               const sub = await stripe.subscriptions.retrieve(subId);
               const userId = sub.metadata?.user_id;
