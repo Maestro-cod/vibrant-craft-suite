@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     const falKey = requiredEnv("FAL_API_KEY");
-    const model = "fal-ai/kling-video/v1.6/standard/text-to-video";
+    const model = VIDEO_MODEL;
     const submitResponse = await fetch(`https://queue.fal.run/${model}`, {
       method: "POST",
       headers: {
@@ -64,8 +64,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         prompt,
-        aspect_ratio: aspectRatio,
-        duration: String(duration),
+        prompt_optimizer: true,
       }),
     });
 
