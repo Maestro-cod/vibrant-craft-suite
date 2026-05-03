@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { GlassCard } from "@/components/GlassCard";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -42,7 +42,45 @@ type LatestVideo = {
   requestId?: string;
   generationId?: string;
   status?: string;
+  errorMessage?: string;
 };
+
+const POLL_INTERVAL_MS = 10_000;
+const MAX_POLL_DURATION_MS = 15 * 60 * 1000; // 15 min — matches server watchdog
+const ACTIVE_REQUEST_KEY = "hyperpost:active_video_request";
+
+type StoredRequest = {
+  requestId: string;
+  prompt: string;
+  startedAt: number;
+};
+
+function loadStoredRequest(): StoredRequest | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_REQUEST_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredRequest;
+    if (!parsed?.requestId) return null;
+    if (Date.now() - parsed.startedAt > MAX_POLL_DURATION_MS) {
+      window.localStorage.removeItem(ACTIVE_REQUEST_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredRequest(req: StoredRequest | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (req) window.localStorage.setItem(ACTIVE_REQUEST_KEY, JSON.stringify(req));
+    else window.localStorage.removeItem(ACTIVE_REQUEST_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 function VideoPage() {
   useRequireAuth();
@@ -53,16 +91,165 @@ function VideoPage() {
   const [busy, setBusy] = useState(false);
   const [last, setLast] = useState<LatestVideo | null>(null);
   const pollingRef = useRef<number | null>(null);
+  const pollStartRef = useRef<number>(0);
+  const inFlightRef = useRef<boolean>(false);
+  const consecutiveErrorsRef = useRef<number>(0);
+
   const creditsRequired = duration === 10 ? 2 : 1;
   const isAdminEmail = user?.email?.toLowerCase() === "stefanmaestro25@gmail.com";
 
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      window.clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    pollStartRef.current = 0;
+    consecutiveErrorsRef.current = 0;
+  }, []);
+
+  // Cleanup polling on unmount
   useEffect(() => {
     return () => {
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-      }
+      if (pollingRef.current) window.clearInterval(pollingRef.current);
     };
   }, []);
+
+  const callVideoFunction = useCallback(
+    async (fn: "start-video" | "check-video", body: Record<string, unknown>) => {
+      // Always grab a fresh session — the cached one may be expired.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token ?? session?.access_token;
+      if (!token) throw new Error("Please sign in again and retry.");
+
+      const { data, error } = await supabase.functions.invoke(fn, {
+        body,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (error) throw new Error(error.message || `Failed to call ${fn}`);
+      if (data?.error) throw new Error(data.message || data.error);
+      return data;
+    },
+    [session?.access_token],
+  );
+
+  const pollUntilComplete = useCallback(
+    async (requestId: string, promptText: string) => {
+      // Re-entrancy guard so overlapping intervals can't double-call.
+      if (inFlightRef.current) return "PENDING";
+      inFlightRef.current = true;
+
+      try {
+        // Hard timeout safety net (server also enforces, but guard the UI).
+        if (pollStartRef.current && Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS) {
+          stopPolling();
+          setBusy(false);
+          saveStoredRequest(null);
+          setLast({
+            prompt: promptText,
+            requestId,
+            status: "FAILED",
+            errorMessage: "Video timed out. If credits were charged, they were refunded.",
+          });
+          toast.error("Video timed out — please try again.");
+          return "FAILED";
+        }
+
+        const res = await callVideoFunction("check-video", { request_id: requestId });
+        consecutiveErrorsRef.current = 0;
+        const status = String(res?.status ?? "UNKNOWN");
+
+        if (status === "COMPLETED" && res?.url) {
+          stopPolling();
+          setBusy(false);
+          saveStoredRequest(null);
+          setLast({
+            prompt: promptText,
+            requestId,
+            generationId: res?.generation_id,
+            status,
+            url: res.url,
+          });
+          await refreshProfile();
+          toast.success("Video ready!");
+          return status;
+        }
+
+        if (status === "FAILED") {
+          stopPolling();
+          setBusy(false);
+          saveStoredRequest(null);
+          setLast({
+            prompt: promptText,
+            requestId,
+            generationId: res?.generation_id,
+            status,
+            errorMessage: res?.message,
+          });
+          await refreshProfile();
+          toast.error(res?.message ?? "Video generation failed");
+          return status;
+        }
+
+        // Still in progress — update UI but keep polling.
+        setLast((prev) => ({
+          prompt: promptText,
+          requestId,
+          generationId: res?.generation_id ?? prev?.generationId,
+          status,
+          url: prev?.url,
+        }));
+        return status;
+      } catch (e) {
+        consecutiveErrorsRef.current += 1;
+        // Tolerate up to 5 consecutive transient errors before giving up the UI.
+        if (consecutiveErrorsRef.current >= 5) {
+          stopPolling();
+          setBusy(false);
+          toast.error(
+            e instanceof Error
+              ? e.message
+              : "Could not check video status. Refresh to resume tracking.",
+          );
+          return "FAILED";
+        }
+        // Otherwise just log and let the next interval tick try again.
+        console.warn("[video] transient check error", e);
+        return "PENDING";
+      } finally {
+        inFlightRef.current = false;
+      }
+    },
+    [callVideoFunction, refreshProfile, stopPolling],
+  );
+
+  const startPolling = useCallback(
+    (requestId: string, promptText: string) => {
+      stopPolling();
+      pollStartRef.current = Date.now();
+      consecutiveErrorsRef.current = 0;
+      pollingRef.current = window.setInterval(() => {
+        void pollUntilComplete(requestId, promptText);
+      }, POLL_INTERVAL_MS);
+    },
+    [pollUntilComplete, stopPolling],
+  );
+
+  // Resume any in-progress request after a refresh / tab close.
+  useEffect(() => {
+    if (!user) return;
+    const stored = loadStoredRequest();
+    if (!stored) return;
+    setBusy(true);
+    setLast({ prompt: stored.prompt, requestId: stored.requestId, status: "IN_PROGRESS" });
+    void (async () => {
+      const initial = await pollUntilComplete(stored.requestId, stored.prompt);
+      if (initial !== "COMPLETED" && initial !== "FAILED") {
+        startPolling(stored.requestId, stored.prompt);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const download = async () => {
     if (!last?.url) return;
@@ -79,7 +266,6 @@ function VideoPage() {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
     } catch {
-      // Fallback: Supabase storage supports ?download= to force attachment
       const sep = last.url.includes("?") ? "&" : "?";
       const a = document.createElement("a");
       a.href = `${last.url}${sep}download=hyperpost-${Date.now()}.mp4`;
@@ -90,91 +276,18 @@ function VideoPage() {
     }
   };
 
-  const stopPolling = () => {
-    if (pollingRef.current) {
-      window.clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  };
-
-  const callVideoFunction = async (
-    fn: "start-video" | "check-video",
-    body: Record<string, unknown>,
-  ) => {
-    const token = session?.access_token;
-    if (!token) {
-      throw new Error("Please sign in again and retry.");
-    }
-
-    const { data, error } = await supabase.functions.invoke(fn, {
-      body,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (error) {
-      throw new Error(error.message || `Failed to call ${fn}`);
-    }
-
-    if (data?.error) {
-      throw new Error(data.message || data.error);
-    }
-
-    return data;
-  };
-
-  const pollUntilComplete = async (requestId: string) => {
-    try {
-      const res = await callVideoFunction("check-video", { request_id: requestId });
-      const status = String(res?.status ?? "UNKNOWN");
-
-      if (status === "COMPLETED" && res?.url) {
-        stopPolling();
-        setBusy(false);
-        setLast((prev) => ({
-          prompt: prev?.prompt ?? prompt,
-          requestId,
-          generationId: res?.generation_id,
-          status,
-          url: res.url,
-        }));
-        await refreshProfile();
-        toast.success("Video ready!");
-        return status;
-      }
-
-      if (status === "FAILED") {
-        stopPolling();
-        setBusy(false);
-        setLast((prev) => ({
-          prompt: prev?.prompt ?? prompt,
-          requestId,
-          generationId: res?.generation_id,
-          status,
-        }));
-        toast.error(res?.message ?? "Video generation failed");
-        return status;
-      }
-
-      setLast((prev) => ({
-        prompt: prev?.prompt ?? prompt,
-        requestId,
-        generationId: res?.generation_id ?? prev?.generationId,
-        status,
-        url: prev?.url,
-      }));
-      return status;
-    } catch (e) {
-      stopPolling();
-      setBusy(false);
-      toast.error(e instanceof Error ? e.message : "Could not check video status");
-      return "FAILED";
-    }
-  };
-
   const generate = async () => {
-    if (!prompt.trim() || !user) return;
+    const trimmed = prompt.trim();
+    if (!trimmed || !user) return;
+    if (trimmed.length < 3) {
+      toast.error("Prompt must be at least 3 characters.");
+      return;
+    }
+    if (trimmed.length > 2000) {
+      toast.error("Prompt is too long (max 2000 characters).");
+      return;
+    }
+    if (busy) return; // prevent double-submit
     if (!isAdminEmail && !profile?.unlimited && (profile?.credits ?? 0) < creditsRequired) {
       toast.error(
         `You need ${creditsRequired} credit${creditsRequired === 1 ? "" : "s"} for this video.`,
@@ -184,37 +297,39 @@ function VideoPage() {
 
     stopPolling();
     setBusy(true);
-    setLast({ prompt, url: undefined, status: "IN_QUEUE" });
+    setLast({ prompt: trimmed, url: undefined, status: "IN_QUEUE" });
 
     try {
       const res = await callVideoFunction("start-video", {
-        prompt,
+        prompt: trimmed,
         aspect_ratio: ratio,
         duration,
       });
 
       const requestId = String(res?.request_id ?? "");
-      if (!requestId) {
-        throw new Error("Video request ID missing from backend response.");
-      }
+      if (!requestId) throw new Error("Video request ID missing from backend response.");
 
+      saveStoredRequest({ requestId, prompt: trimmed, startedAt: Date.now() });
       setLast({
-        prompt,
+        prompt: trimmed,
         requestId,
         generationId: res?.generation_id,
         status: String(res?.status ?? "IN_QUEUE"),
         url: undefined,
       });
       await refreshProfile();
-      const initialStatus = await pollUntilComplete(requestId);
+
+      const initialStatus = await pollUntilComplete(requestId, trimmed);
       if (initialStatus !== "COMPLETED" && initialStatus !== "FAILED") {
-        pollingRef.current = window.setInterval(() => {
-          void pollUntilComplete(requestId);
-        }, 10000);
+        startPolling(requestId, trimmed);
       }
     } catch (e) {
       setBusy(false);
-      toast.error(e instanceof Error ? e.message : "Generation failed");
+      saveStoredRequest(null);
+      const message = e instanceof Error ? e.message : "Generation failed";
+      toast.error(message);
+      setLast({ prompt: trimmed, status: "FAILED", errorMessage: message });
+      await refreshProfile(); // in case server refunded
     }
   };
 
@@ -240,10 +355,14 @@ function VideoPage() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
+              maxLength={2000}
               disabled={busy}
               placeholder="A cinematic shot of a neon-lit Tokyo street at night, rain reflections, slow dolly forward…"
               className="glass-strong w-full resize-none rounded-xl px-4 py-3 outline-none transition focus:ring-2 focus:ring-ring disabled:opacity-60"
             />
+            <div className="mt-1 text-right text-xs text-muted-foreground">
+              {prompt.length}/2000
+            </div>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -332,7 +451,8 @@ function VideoPage() {
               <div>
                 <p className="font-medium">Generating your video... this takes 1-2 minutes</p>
                 <p className="text-sm text-muted-foreground">
-                  We auto-check every 10 seconds and show it here when ready.
+                  We auto-check every 10 seconds and show it here when ready. Safe to leave this
+                  page — we'll resume tracking when you come back.
                 </p>
               </div>
             </div>
@@ -344,7 +464,7 @@ function VideoPage() {
             <h3 className="mb-2 font-semibold">Latest request</h3>
             <p className="mb-1 text-sm text-muted-foreground">{last.prompt}</p>
             <p className="text-sm text-destructive">
-              This video did not finish successfully. Please try again.
+              {last.errorMessage ?? "This video did not finish successfully. Please try again."}
             </p>
           </GlassCard>
         )}
