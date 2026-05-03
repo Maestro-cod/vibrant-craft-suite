@@ -123,7 +123,7 @@ function VideoPage() {
         }));
         await refreshProfile();
         toast.success("Video ready!");
-        return;
+        return status;
       }
 
       if (status === "FAILED") {
@@ -136,7 +136,7 @@ function VideoPage() {
           status,
         }));
         toast.error(res?.message ?? "Video generation failed");
-        return;
+        return status;
       }
 
       setLast((prev) => ({
@@ -146,10 +146,12 @@ function VideoPage() {
         status,
         url: prev?.url,
       }));
+      return status;
     } catch (e: any) {
       stopPolling();
       setBusy(false);
       toast.error(e?.message ?? "Could not check video status");
+      return "FAILED";
     }
   };
 
@@ -184,10 +186,12 @@ function VideoPage() {
         url: undefined,
       });
       await refreshProfile();
-      await pollUntilComplete(requestId);
-      pollingRef.current = window.setInterval(() => {
-        void pollUntilComplete(requestId);
-      }, 10000);
+      const initialStatus = await pollUntilComplete(requestId);
+      if (initialStatus !== "COMPLETED" && initialStatus !== "FAILED") {
+        pollingRef.current = window.setInterval(() => {
+          void pollUntilComplete(requestId);
+        }, 10000);
+      }
     } catch (e: any) {
       setBusy(false);
       toast.error(e?.message ?? "Generation failed");
