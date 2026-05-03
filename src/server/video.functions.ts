@@ -25,7 +25,7 @@ export const generateVideo = createServerFn({ method: "POST" })
 
     await spendCredits(userId, 1);
 
-    const MODEL = "fal-ai/kling-video/v1/standard/text-to-video";
+    const MODEL = "fal-ai/kling-video/v1.6/standard/text-to-video";
     // Kling supports only 5 or 10 second durations
     const dur = data.duration <= 7 ? "5" : "10";
 
