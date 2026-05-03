@@ -97,7 +97,7 @@ export function normalizeStatus(status: unknown) {
   return value;
 }
 
-export const VIDEO_MODEL = "fal-ai/kling-video/v1.6/standard/text-to-video";
+export const VIDEO_MODEL = "fal-ai/kling-video/v3/pro/text-to-video";
 
 export function getRequestUrls(requestId: string, model: string = VIDEO_MODEL) {
   // Fal's queue status/response endpoints only use the app namespace
