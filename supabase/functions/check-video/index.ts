@@ -1,7 +1,7 @@
 import {
   createAdminClient,
   extractVideoUrl,
-  getKlingRequestUrls,
+  getRequestUrls,
   getUserFromRequest,
   handleOptions,
   json,
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     const falKey = requiredEnv("FAL_API_KEY");
-    const { statusUrl, responseUrl } = getKlingRequestUrls(requestId);
+    const { statusUrl, responseUrl } = getRequestUrls(requestId);
     const statusResponse = await fetch(statusUrl, {
       headers: { Authorization: `Key ${falKey}` },
     });

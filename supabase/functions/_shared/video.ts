@@ -97,8 +97,10 @@ export function normalizeStatus(status: unknown) {
   return value;
 }
 
-export function getKlingRequestUrls(requestId: string) {
-  const base = `https://queue.fal.run/fal-ai/kling-video/requests/${requestId}`;
+export const VIDEO_MODEL = "fal-ai/minimax/video-01";
+
+export function getRequestUrls(requestId: string, model: string = VIDEO_MODEL) {
+  const base = `https://queue.fal.run/${model}/requests/${requestId}`;
   return {
     statusUrl: `${base}/status`,
     responseUrl: base,

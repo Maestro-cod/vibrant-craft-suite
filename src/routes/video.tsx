@@ -61,17 +61,26 @@ function VideoPage() {
   const download = async () => {
     if (!last?.url) return;
     try {
-      const res = await fetch(last.url);
+      const res = await fetch(last.url, { mode: "cors" });
+      if (!res.ok) throw new Error("fetch failed");
       const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
+      a.href = objUrl;
       a.download = `hyperpost-${Date.now()}.mp4`;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(a.href);
+      setTimeout(() => URL.revokeObjectURL(objUrl), 1000);
     } catch {
-      toast.error("Download failed");
+      // Fallback: Supabase storage supports ?download= to force attachment
+      const sep = last.url.includes("?") ? "&" : "?";
+      const a = document.createElement("a");
+      a.href = `${last.url}${sep}download=hyperpost-${Date.now()}.mp4`;
+      a.download = `hyperpost-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
   };
 
