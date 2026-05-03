@@ -42,7 +42,7 @@ function ScriptPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 pt-8 space-y-6">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 pt-24 space-y-6">
         <div className="flex items-center gap-3">
           <div className="size-12 rounded-xl bg-gradient-brand grid place-items-center glow-violet"><FileText className="size-5 text-background" /></div>
           <div>
