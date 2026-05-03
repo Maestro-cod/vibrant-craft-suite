@@ -82,14 +82,18 @@ Deno.serve(async (req) => {
     }
 
     if (!profile.unlimited) {
-      const { error: creditError } = await admin
+      const nextCredits = profile.credits - creditsRequired;
+      const { data: updatedProfile, error: creditError } = await admin
         .from("profiles")
-        .update({ credits: profile.credits - creditsRequired })
-        .eq("id", user.id);
+        .update({ credits: nextCredits })
+        .eq("id", user.id)
+        .eq("credits", profile.credits)
+        .select("credits")
+        .maybeSingle();
 
-      if (creditError) {
+      if (creditError || !updatedProfile) {
         console.error("[start-video] credit update failed", creditError);
-        return json({ error: "CREDIT_UPDATE_FAILED", message: "Video was queued, but credit update failed." }, 500);
+        return json({ error: "CREDIT_UPDATE_FAILED", message: "Your credit balance changed. Please refresh and try again." }, 409);
       }
     }
 
