@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as VideoRouteImport } from './routes/video'
 import { Route as ScriptRouteImport } from './routes/script'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MusicRouteImport } from './routes/music'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -34,6 +35,11 @@ const VideoRoute = VideoRouteImport.update({
 const ScriptRoute = ScriptRouteImport.update({
   id: '/script',
   path: '/script',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/music': typeof MusicRoute
   '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/music': typeof MusicRoute
   '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/music': typeof MusicRoute
   '/pricing': typeof PricingRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/music'
     | '/pricing'
+    | '/privacy-policy'
     | '/script'
     | '/video'
     | '/voice'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/music'
     | '/pricing'
+    | '/privacy-policy'
     | '/script'
     | '/video'
     | '/voice'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/music'
     | '/pricing'
+    | '/privacy-policy'
     | '/script'
     | '/video'
     | '/voice'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   MusicRoute: typeof MusicRoute
   PricingRoute: typeof PricingRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ScriptRoute: typeof ScriptRoute
   VideoRoute: typeof VideoRoute
   VoiceRoute: typeof VoiceRoute
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/script'
       fullPath: '/script'
       preLoaderRoute: typeof ScriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -262,6 +282,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   MusicRoute: MusicRoute,
   PricingRoute: PricingRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ScriptRoute: ScriptRoute,
   VideoRoute: VideoRoute,
   VoiceRoute: VoiceRoute,
