@@ -46,7 +46,8 @@ type LatestVideo = {
 };
 
 const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_DURATION_MS = 15 * 60 * 1000; // 15 min — matches server watchdog
+const MAX_POLL_ATTEMPTS = 72; // 72 × 10s = 12 min
+const MAX_POLL_DURATION_MS = MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS;
 const ACTIVE_REQUEST_KEY = "hyperpost:active_video_request";
 
 type StoredRequest = {
@@ -92,6 +93,7 @@ function VideoPage() {
   const [last, setLast] = useState<LatestVideo | null>(null);
   const pollingRef = useRef<number | null>(null);
   const pollStartRef = useRef<number>(0);
+  const pollAttemptsRef = useRef<number>(0);
   const inFlightRef = useRef<boolean>(false);
   const consecutiveErrorsRef = useRef<number>(0);
 
@@ -104,6 +106,7 @@ function VideoPage() {
       pollingRef.current = null;
     }
     pollStartRef.current = 0;
+    pollAttemptsRef.current = 0;
     consecutiveErrorsRef.current = 0;
   }, []);
 
@@ -140,8 +143,12 @@ function VideoPage() {
       inFlightRef.current = true;
 
       try {
-        // Hard timeout safety net (server also enforces, but guard the UI).
-        if (pollStartRef.current && Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS) {
+        pollAttemptsRef.current += 1;
+        // Hard timeout safety net: 72 attempts (12 min) or wall-clock fallback.
+        const timedOut =
+          pollAttemptsRef.current > MAX_POLL_ATTEMPTS ||
+          (pollStartRef.current && Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS);
+        if (timedOut) {
           stopPolling();
           setBusy(false);
           saveStoredRequest(null);
@@ -149,9 +156,9 @@ function VideoPage() {
             prompt: promptText,
             requestId,
             status: "FAILED",
-            errorMessage: "Video timed out. If credits were charged, they were refunded.",
+            errorMessage: "Video is taking too long. Please check back later or try again.",
           });
-          toast.error("Video timed out — please try again.");
+          toast.error("Video is taking too long. Please check back later or try again.");
           return "FAILED";
         }
 
