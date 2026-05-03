@@ -77,9 +77,16 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
             }
           } else if (event.type === "invoice.paid") {
             const inv = event.data.object as Stripe.Invoice;
-            const userId = (inv.subscription_details?.metadata as any)?.user_id;
-            const plan = (inv.subscription_details?.metadata as any)?.plan as "basic" | "pro" | "elite" | undefined;
-            if (userId && plan) {
+            const subId = (inv as any).subscription as string | undefined;
+            if (subId) {
+              const sub = await stripe.subscriptions.retrieve(subId);
+              const userId = sub.metadata?.user_id;
+              const plan = planFromMeta(sub.metadata);
+              if (userId && plan) {
+                await supabaseAdmin.rpc("grant_plan_credits", { _user_id: userId, _plan: plan });
+              }
+            }
+            const _ignored = false; if (_ignored) {
               // Renewal — top up credits to plan allowance.
               await supabaseAdmin.rpc("grant_plan_credits", { _user_id: userId, _plan: plan });
             }
