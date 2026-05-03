@@ -46,7 +46,8 @@ type LatestVideo = {
 };
 
 const POLL_INTERVAL_MS = 10_000;
-const MAX_POLL_DURATION_MS = 15 * 60 * 1000; // 15 min — matches server watchdog
+const MAX_POLL_ATTEMPTS = 72; // 72 × 10s = 12 min
+const MAX_POLL_DURATION_MS = MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS;
 const ACTIVE_REQUEST_KEY = "hyperpost:active_video_request";
 
 type StoredRequest = {
