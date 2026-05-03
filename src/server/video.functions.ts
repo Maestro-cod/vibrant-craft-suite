@@ -10,11 +10,11 @@ const VideoInput = z.object({
   duration: z.number().int().min(3).max(15).default(5),
 });
 
-// Map UI ratio to fal aspect ratio strings
-const RATIO_MAP: Record<string, string> = {
-  "9:16": "9:16",
-  "1:1": "1:1",
-  "16:9": "16:9",
+// Map UI ratio to fal video_size enum
+const SIZE_MAP: Record<string, string> = {
+  "9:16": "portrait_16_9",
+  "1:1": "square",
+  "16:9": "landscape_16_9",
 };
 
 /**
