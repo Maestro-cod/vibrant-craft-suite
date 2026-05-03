@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as VideoRouteImport } from './routes/video'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
 import { Route as ScriptRouteImport } from './routes/script'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -30,6 +31,11 @@ const VoiceRoute = VoiceRouteImport.update({
 const VideoRoute = VideoRouteImport.update({
   id: '/video',
   path: '/video',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScriptRoute = ScriptRouteImport.update({
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/script': typeof ScriptRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/video': typeof VideoRoute
   '/voice': typeof VoiceRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/script'
+    | '/terms-of-service'
     | '/video'
     | '/voice'
     | '/api/public/stripe-webhook'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/script'
+    | '/terms-of-service'
     | '/video'
     | '/voice'
     | '/api/public/stripe-webhook'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy-policy'
     | '/script'
+    | '/terms-of-service'
     | '/video'
     | '/voice'
     | '/api/public/stripe-webhook'
@@ -180,6 +192,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ScriptRoute: typeof ScriptRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
   VideoRoute: typeof VideoRoute
   VoiceRoute: typeof VoiceRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/video'
       fullPath: '/video'
       preLoaderRoute: typeof VideoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/script': {
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ScriptRoute: ScriptRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
   VideoRoute: VideoRoute,
   VoiceRoute: VoiceRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
