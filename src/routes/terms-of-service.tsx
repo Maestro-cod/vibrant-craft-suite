@@ -86,6 +86,10 @@ function TermsPage() {
               <a href="mailto:legal@hyperpostai.com" className="text-primary hover:underline">legal@hyperpostai.com</a>.
             </p>
           </Section>
+
+          <p className="border-t border-white/5 pt-6 text-center text-xs text-muted-foreground">
+            © 2026 HyperPost AI. All rights reserved.
+          </p>
         </GlassCard>
       </div>
     </AppShell>
