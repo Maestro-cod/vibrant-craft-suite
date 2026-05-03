@@ -1,7 +1,7 @@
 import {
   createAdminClient,
   extractVideoUrl,
-  getKlingRequestUrls,
+  getRequestUrls,
   getUserFromRequest,
   handleOptions,
   json,
