@@ -55,6 +55,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          monthly_credits: number
           plan: Database["public"]["Enums"]["plan_tier"]
           stripe_customer_id: string | null
           unlimited: boolean
@@ -67,6 +68,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          monthly_credits?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           stripe_customer_id?: string | null
           unlimited?: boolean
@@ -79,10 +81,47 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          monthly_credits?: number
           plan?: Database["public"]["Enums"]["plan_tier"]
           stripe_customer_id?: string | null
           unlimited?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan: Database["public"]["Enums"]["plan_tier"]
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -112,6 +151,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      grant_plan_credits: {
+        Args: {
+          _plan: Database["public"]["Enums"]["plan_tier"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
