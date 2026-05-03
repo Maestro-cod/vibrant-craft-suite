@@ -118,24 +118,66 @@ export function getRequestUrls(requestId: string, model: string = VIDEO_MODEL) {
   };
 }
 
-interface VideoPayload {
-  video?: { url?: string };
-  data?: {
-    video?: { url?: string };
-    videos?: Array<{ url?: string }>;
-    output?: { url?: string };
-  };
-  videos?: Array<{ url?: string }>;
-  output?: { url?: string };
+/**
+ * Recursively walk an arbitrary provider payload and find the first plausible
+ * video URL. Fal/Kling response shapes have changed multiple times across
+ * versions (sometimes `video.url`, sometimes `videos[0].url`, sometimes
+ * nested under `data`, `output`, `result`, `response`, `payload`, etc.), so
+ * instead of hardcoding every known path we do a bounded deep search.
+ *
+ * Rules:
+ *  - Returns the first string that looks like an http(s) URL ending in a
+ *    known video extension (or a known video host).
+ *  - Falls back to ANY http(s) string under a key that mentions "video",
+ *    "url", "output", "asset", "file", or "download" if no extension match.
+ *  - Bounded depth + visited set to avoid pathological payloads / cycles.
+ */
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+
+const VIDEO_EXT_RE = /\.(mp4|mov|webm|m4v|mkv)(\?|#|$)/i;
+const VIDEO_HOST_RE = /(fal\.media|fal\.ai|v3\.fal\.media|kling|cdn\.fal)/i;
+const URL_KEY_RE = /(video|url|output|asset|file|download|src|uri|signed)/i;
+
+function isHttpUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https?:\/\//i.test(value);
 }
 
-export function extractVideoUrl(payload: VideoPayload): string | undefined {
-  return (
-    payload?.video?.url ??
-    payload?.data?.video?.url ??
-    payload?.videos?.[0]?.url ??
-    payload?.data?.videos?.[0]?.url ??
-    payload?.output?.url ??
-    payload?.data?.output?.url
-  );
+export function extractVideoUrl(payload: unknown): string | undefined {
+  if (payload == null) return undefined;
+
+  const seen = new WeakSet<object>();
+  let fallback: string | undefined;
+
+  const walk = (node: Json, parentKey: string, depth: number): string | undefined => {
+    if (depth > 8 || node == null) return undefined;
+
+    if (typeof node === "string") {
+      if (!isHttpUrl(node)) return undefined;
+      if (VIDEO_EXT_RE.test(node)) return node;
+      if (VIDEO_HOST_RE.test(node) && /video|kling/i.test(node)) return node;
+      if (!fallback && URL_KEY_RE.test(parentKey)) fallback = node;
+      return undefined;
+    }
+
+    if (typeof node !== "object") return undefined;
+    if (seen.has(node as object)) return undefined;
+    seen.add(node as object);
+
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        const hit = walk(item as Json, parentKey, depth + 1);
+        if (hit) return hit;
+      }
+      return undefined;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      const hit = walk(value as Json, key, depth + 1);
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+
+  const direct = walk(payload as Json, "", 0);
+  return direct ?? fallback;
 }
