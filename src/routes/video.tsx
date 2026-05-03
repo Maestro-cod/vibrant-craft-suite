@@ -102,7 +102,7 @@ function VideoPage() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Duration: {duration}s</label>
-              <input type="range" min={3} max={15} value={duration} disabled={busy}
+              <input type="range" min={5} max={10} step={5} value={duration} disabled={busy}
                 onChange={(e) => setDuration(+e.target.value)} className="w-full accent-[oklch(0.85_0.18_220)]" />
             </div>
           </div>
