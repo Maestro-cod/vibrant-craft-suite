@@ -26,8 +26,8 @@ export function AppShell({ children, hideFooter = false }: { children: ReactNode
   return (
     <div className="min-h-screen flex flex-col">
       <AnimatedBg />
-      <header className="sticky top-0 z-50">
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 pt-3">
+      <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 py-3">
           <div className="glass-strong rounded-2xl h-14 px-3 sm:px-4 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-2 font-bold">
               <div className="size-8 rounded-lg bg-gradient-brand grid place-items-center glow-cyan">
