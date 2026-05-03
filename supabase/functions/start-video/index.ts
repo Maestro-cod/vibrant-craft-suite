@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         prompt,
-        prompt_optimizer: true,
+        duration: String(duration),
+        aspect_ratio: aspectRatio,
       }),
     });
 

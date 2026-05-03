@@ -312,8 +312,8 @@ function VideoPage() {
             <div className="flex items-center gap-3">
               <Loader2 className="size-5 animate-spin text-primary" />
               <div>
-                <p className="font-medium">Generating your video...</p>
-                <p className="text-sm text-muted-foreground">Checking every 10 seconds. Kling usually finishes in 2–5 minutes.</p>
+                <p className="font-medium">Generating your video... this takes 1-2 minutes</p>
+                <p className="text-sm text-muted-foreground">We auto-check every 10 seconds and show it here when ready.</p>
               </div>
             </div>
           </GlassCard>
